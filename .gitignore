@@ -1,0 +1,54 @@
+data/
+
+# Python template
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Local development settings
+.env
+venv/
+.env.local
+.env.*.local
+
+# IDE-specific files
+.idea/
+*.swp
+*.swo
+*.bak
+
+# Jupyter Notebook-specific files
+.ipynb_checkpoints/
+
+# Testing and coverage reports
+htmlcov/
+.coverage
+.tox/
+
+# Compiled files
+*.pyd
+*.pyo
+*.pyw
+*.pyz
+*.pxd
+*.pyd
+*.h
+*.c
+
+# Virtual environments
+virtualenv/
+venv/
