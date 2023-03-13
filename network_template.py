@@ -50,7 +50,7 @@ class Network(object):
 
                 loss = cross_entropy(mini_batch[1], output_activation)
                 # L2 regularisation loss
-                loss += (l2_lambda / 2 * mini_batch_size) * sum([np.sum(np.square(w)) for w in self.weights])
+                loss += (l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
                 loss_avg += loss
 
             print("Epoch {} complete".format(j))
