@@ -18,7 +18,8 @@ class Network(object):
             # Implement the buffers necessary for the Adam optimizer.
             pass
 
-    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, eta):
+    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, eta, decay_rate,
+              l2_lambda):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -42,11 +43,14 @@ class Network(object):
 
                 self.update_network(gw, gb, eta_current)
 
-                # Implement the learning rate schedule for Task 5
-                eta_current = eta
+                # Exponential learning rate decay
+                eta_current = eta * np.exp(-decay_rate * j)
+
                 iteration_index += 1
 
                 loss = cross_entropy(mini_batch[1], output_activation)
+                # L2 regularisation loss
+                loss += (l2_lambda / 2 * mini_batch_size) * sum([np.sum(np.square(w)) for w in self.weights])
                 loss_avg += loss
 
             print("Epoch {} complete".format(j))
@@ -187,5 +191,5 @@ if __name__ == "__main__":
     # The initial settings are not even close to the optimal network architecture, try increasing the number of layers
     # and neurons and see what happens.
     net = Network([train_data.shape[0], 100, 100, 10], optimizer="sgd")
-    net.train(train_data, train_class, val_data, val_class, 20, 64, 0.01)
+    net.train(train_data, train_class, val_data, val_class, 20, 64, 0.01, 0.05, 0.01)
     net.eval_network(test_data, test_class)
