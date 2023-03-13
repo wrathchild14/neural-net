@@ -120,11 +120,8 @@ class Network(object):
             z = zs[-L]
             sp = sigmoid_prime(z)
             delta = np.dot(self.weights[-L + 1].T, delta) * sp
-            nabla_w.append(np.dot(delta, activations[-L - 1].T))
-            nabla_b.append(np.sum(delta, axis=1, keepdims=True))
-
-        nabla_w.reverse()
-        nabla_b.reverse()
+            nabla_w.insert(0, np.dot(delta, activations[-L - 1].T))
+            nabla_b.insert(0, np.sum(delta, axis=1, keepdims=True))
 
         return nabla_w, nabla_b
 
