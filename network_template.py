@@ -37,8 +37,8 @@ class Network(object):
                 for k in range(0, n, mini_batch_size)]
 
             for mini_batch in mini_batches:
-                output, Zs, As = self.forward_pass(mini_batch[0])
-                gw, gb = net.backward_pass(output, mini_batch[1], Zs, As)
+                output_activation, zs, activations = self.forward_pass(mini_batch[0])
+                gw, gb = net.backward_pass(output_activation, mini_batch[1], zs, activations)
 
                 self.update_network(gw, gb, eta_current)
 
@@ -46,7 +46,7 @@ class Network(object):
                 eta_current = eta
                 iteration_index += 1
 
-                loss = cross_entropy(mini_batch[1], output)
+                loss = cross_entropy(mini_batch[1], output_activation)
                 loss_avg += loss
 
             print("Epoch {} complete".format(j))
@@ -89,15 +89,44 @@ class Network(object):
         else:
             raise ValueError('Unknown optimizer:' + self.optimizer)
 
-    def forward_pass(self, input):
+    def forward_pass(self, x):
         # input - numpy array of dimensions [n0 x m], where m is the number of examples in the mini batch and
         # n0 is the number of input attributes
-        ########## Implement the forward pass
-        pass
+        zs = []
+        activation = x
+        activations = [x]
+        for i in range(len(self.weights) - 1):
+            z = np.dot(self.weights[i], activation) + self.biases[i]
+            zs.append(z)
 
-    def backward_pass(self, output, target, Zs, activations):
-        ########## Implement the backward pass
-        pass
+            activation = sigmoid(z)
+            activations.append(activation)
+
+        z = np.dot(self.weights[-1], activation) + self.biases[-1]
+        zs.append(z)
+
+        activation = softmax(z)
+        activations.append(activation)
+
+        return activation, zs, activations
+
+    def backward_pass(self, output, target, zs, activations):
+        delta = softmax_dLdZ(output, target)
+
+        nabla_w = [np.dot(delta, activations[-2].T)]
+        nabla_b = [np.sum(delta, axis=1, keepdims=True)]
+
+        for L in range(2, len(self.weights) + 1):
+            z = zs[-L]
+            sp = sigmoid_prime(z)
+            delta = np.dot(self.weights[-L + 1].T, delta) * sp
+            nabla_w.append(np.dot(delta, activations[-L - 1].T))
+            nabla_b.append(np.sum(delta, axis=1, keepdims=True))
+
+        nabla_w.reverse()
+        nabla_b.reverse()
+
+        return nabla_w, nabla_b
 
 
 def softmax(Z):
