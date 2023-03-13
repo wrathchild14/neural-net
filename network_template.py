@@ -18,7 +18,7 @@ class Network(object):
             # Implement the buffers necessary for the Adam optimizer.
             pass
 
-    def train(self, training_data, training_class, val_data, val_class, epochs, mini_batch_size, eta):
+    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, eta):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -52,7 +52,7 @@ class Network(object):
             print("Epoch {} complete".format(j))
             print("Loss:" + str(loss_avg / len(mini_batches)))
             if j % 10 == 0:
-                self.eval_network(val_data, val_class)
+                self.eval_network(eval_data, eval_class)
 
     def eval_network(self, validation_data, validation_class):
         # validation data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
@@ -65,7 +65,7 @@ class Network(object):
             example = np.expand_dims(validation_data[:, i], -1)
             example_class = np.expand_dims(validation_class[:, i], -1)
             example_class_num = np.argmax(validation_class[:, i], axis=0)
-            output, Zs, activations = self.forward_pass(example)
+            output, zs, activations = self.forward_pass(example)
             output_num = np.argmax(output, axis=0)[0]
             tp += int(example_class_num == output_num)
 
@@ -111,7 +111,7 @@ class Network(object):
         return activation, zs, activations
 
     def backward_pass(self, output, target, zs, activations):
-        delta = softmax_dLdZ(output, target)
+        delta = softmax_dl_dz(output, target)
 
         nabla_w = [np.dot(delta, activations[-2].T)]
         nabla_b = [np.sum(delta, axis=1, keepdims=True)]
@@ -129,19 +129,19 @@ class Network(object):
         return nabla_w, nabla_b
 
 
-def softmax(Z):
-    expZ = np.exp(Z - np.max(Z))
-    return expZ / expZ.sum(axis=0, keepdims=True)
+def softmax(z):
+    exp_z = np.exp(z - np.max(z))
+    return exp_z / exp_z.sum(axis=0, keepdims=True)
 
 
-def softmax_dLdZ(output, target):
+def softmax_dl_dz(output, target):
     # partial derivative of the cross entropy loss w.r.t Z at the last layer
     return output - target
 
 
-def cross_entropy(y_true, y_pred, epsilon=1e-12):
+def cross_entropy(y_true, y_predicted, epsilon=1e-12):
     targets = y_true.transpose()
-    predictions = y_pred.transpose()
+    predictions = y_predicted.transpose()
     predictions = np.clip(predictions, epsilon, 1. - epsilon)
     N = predictions.shape[0]
     ce = -np.sum(targets * np.log(predictions + 1e-9)) / N
