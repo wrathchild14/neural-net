@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import pickle
 
@@ -26,8 +25,8 @@ class Network(object):
             self.variance_b = [np.zeros_like(b) for b in self.biases]
         print(f"Log: initialized network with the {self.optimizer} optimizer")
 
-    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, learning_rate,
-              decay_rate, enable_l2):
+    def train(self, training_data, training_class, eval_data, eval_class, epochs_param, mini_batch_size,
+              learning_rate_param, decay_rate_param, enable_l2_param):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -35,10 +34,10 @@ class Network(object):
         # mini_batch_size - number of examples the network uses to compute the gradient estimation
 
         iteration_index = 0
-        learning_rate_current = learning_rate
+        learning_rate_current = learning_rate_param
 
         n = training_data.shape[1]
-        for j in range(epochs):
+        for j in range(epochs_param):
             print("Epoch" + str(j))
             loss_avg = 0.0
             mini_batches = [
@@ -52,11 +51,11 @@ class Network(object):
                 self.update_network(gw, gb, learning_rate_current, iteration_index)
 
                 # Exponential learning rate decay
-                learning_rate_current = learning_rate * np.exp(-decay_rate * j)
+                learning_rate_current = learning_rate_param * np.exp(-decay_rate_param * j)
                 iteration_index += 1
                 loss = cross_entropy(mini_batch[1], output_activation)
                 # L2 regularisation loss
-                if enable_l2:
+                if enable_l2_param:
                     loss += (self.l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
 
                 loss_avg += loss
@@ -180,18 +179,19 @@ def unpickle(file):
         return pickle.load(fo, encoding='bytes')
 
 
-def load_data_cifar(train_file, test_file):
-    train_dict = unpickle(train_file)
-    test_dict = unpickle(test_file)
-    train_data = np.array(train_dict['data']) / 255.0
-    train_class = np.array(train_dict['labels'])
-    train_class_one_hot = np.zeros((train_data.shape[0], 10))
-    train_class_one_hot[np.arange(train_class.shape[0]), train_class] = 1.0
-    test_data = np.array(test_dict['data']) / 255.0
-    test_class = np.array(test_dict['labels'])
-    test_class_one_hot = np.zeros((test_class.shape[0], 10))
-    test_class_one_hot[np.arange(test_class.shape[0]), test_class] = 1.0
-    return train_data.transpose(), train_class_one_hot.transpose(), test_data.transpose(), test_class_one_hot.transpose()
+def load_data_cifar(train_file_param, test_file_param):
+    train_dict = unpickle(train_file_param)
+    test_dict = unpickle(test_file_param)
+    train_data_ = np.array(train_dict['data']) / 255.0
+    train_class_ = np.array(train_dict['labels'])
+    train_class_one_hot = np.zeros((train_data_.shape[0], 10))
+    train_class_one_hot[np.arange(train_class_.shape[0]), train_class_] = 1.0
+    test_data_ = np.array(test_dict['data']) / 255.0
+    test_class_ = np.array(test_dict['labels'])
+    test_class_one_hot = np.zeros((test_class_.shape[0], 10))
+    test_class_one_hot[np.arange(test_class_.shape[0]), test_class_] = 1.0
+    return train_data_.transpose(), train_class_one_hot.transpose(), test_data_.transpose(), \
+        test_class_one_hot.transpose()
 
 
 if __name__ == "__main__":
@@ -208,10 +208,10 @@ if __name__ == "__main__":
     # number of input attributes from the data, and the last layer has to match the number of output classes
     # The initial settings are not even close to the optimal network architecture, try increasing the number of layers
     # and neurons and see what happens.
-    net = Network([train_data.shape[0], 200, 10], optimizer="adam")
+    net = Network([train_data.shape[0], 200, 10], optimizer="sgd")
     # epoch, batch_size, learning_rate, decay_rate, l2_lambda = 20, 16, 0.01, 0.05, 0.001
-    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 50, 16, 2e-5, 0.001, True
+    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 2, 16, 2e-5, 0.001, True
     net.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate, enable_l2)
     net.eval_network(test_data, test_class)
     print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
-          f" decay rate - {decay_rate}, lambda for L2 - {0.01}")
+          f" decay rate - {decay_rate}, L2 enabling is {enable_l2} for {0.01}")
