@@ -23,7 +23,8 @@ class Network(object):
             self.variance_w = [np.zeros_like(w) for w in self.weights]
             self.mean_b = [np.zeros_like(b) for b in self.biases]
             self.variance_b = [np.zeros_like(b) for b in self.biases]
-        print(f"Log: initialized network with the {self.optimizer} optimizer")
+        print(f"Log: initialized network with the {self.optimizer} optimizer, num. of hidden layers - {len(sizes) - 2}"
+              f" and sizes are {sizes}")
 
     def train(self, training_data, training_class, eval_data, eval_class, epochs_param, mini_batch_size,
               learning_rate_param, decay_rate_param, enable_l2_param):
@@ -46,7 +47,7 @@ class Network(object):
 
             for mini_batch in mini_batches:
                 output_activation, zs, activations = self.forward_pass(mini_batch[0])
-                gw, gb = net.backward_pass(output_activation, mini_batch[1], zs, activations)
+                gw, gb = network.backward_pass(output_activation, mini_batch[1], zs, activations)
 
                 self.update_network(gw, gb, learning_rate_current, iteration_index)
 
@@ -208,10 +209,19 @@ if __name__ == "__main__":
     # number of input attributes from the data, and the last layer has to match the number of output classes
     # The initial settings are not even close to the optimal network architecture, try increasing the number of layers
     # and neurons and see what happens.
-    net = Network([train_data.shape[0], 200, 10], optimizer="sgd")
+
+    # Params
+    layers, optimizer = [train_data.shape[0], 200, 10], "sgd"
     # epoch, batch_size, learning_rate, decay_rate, l2_lambda = 20, 16, 0.01, 0.05, 0.001
-    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 2, 16, 2e-5, 0.001, True
-    net.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate, enable_l2)
-    net.eval_network(test_data, test_class)
+    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 30, 16, 2e-5, 0.001, True
+
+    # Core
+    network = Network(layers, optimizer)
+    network.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate,
+                  enable_l2)
+    network.eval_network(test_data, test_class)
+
+    # Logging for testing:
     print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
           f" decay rate - {decay_rate}, L2 enabling is {enable_l2} for {0.01}")
+    print(f"Log: network was optimized with {optimizer} optimizer and layers were {layers}")
