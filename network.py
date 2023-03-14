@@ -25,8 +25,8 @@ class Network(object):
         print(f"Log: initialized network with the {self.optimizer} optimizer, num. of hidden layers - {len(sizes) - 2}"
               f" and sizes are {sizes}")
 
-    def train(self, training_data, training_class, eval_data, eval_class, epochs_param, mini_batch_size,
-              learning_rate_param, decay_rate_param, enable_l2_param):
+    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size,
+              learning_rate, decay_rate, enable_l2):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -34,10 +34,10 @@ class Network(object):
         # mini_batch_size - number of examples the network uses to compute the gradient estimation
 
         iteration_index = 0
-        learning_rate_current = learning_rate_param
+        learning_rate_current = learning_rate
 
         n = training_data.shape[1]
-        for j in range(epochs_param):
+        for j in range(epochs):
             print("Epoch" + str(j))
             loss_avg = 0.0
             mini_batches = [
@@ -51,14 +51,14 @@ class Network(object):
                 self.update_network(gw, gb, learning_rate_current, iteration_index)
 
                 # Learning rate scheduler = Exponential learning rate decay
-                learning_rate_current = learning_rate_param * np.exp(-decay_rate_param * j)
+                learning_rate_current = learning_rate * np.exp(-decay_rate * j)
                 # learning_rate_current = learning_rate_param
 
                 iteration_index += 1
                 loss = cross_entropy(mini_batch[1], output_activation)
 
                 # L2 regularisation loss
-                if enable_l2_param:
+                if enable_l2:
                     loss += (self.l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
 
                 loss_avg += loss
@@ -216,18 +216,18 @@ if __name__ == "__main__":
     layers = [train_data.shape[0], 200, 100, 10]
 
     # sgd
-    optimizer_param, epochs, batch_size, learning_rate, decay_rate, enable_l2 = "sgd", 30, 16, 0.001, 0.01, True
+    optimizer_p, epochs_p, batch_size_p, learning_rate_p, decay_rate_p, enable_l2_p = "sgd", 30, 16, 0.001, 0.01, True
 
     # adam
-    # optimizer, epochs, batch_size, learning_rate, decay_rate, enable_l2 = "adam", 30, 16, 2e-4, 0.01, True
+    # optimizer_p, epochs_p, batch_size_p, learning_rate_p, decay_rate_p, enable_l2_p = "adam", 30, 16, 2e-4, 0.01, True
 
     # Core
-    network = Network(layers, optimizer_param)
-    network.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate,
-                  enable_l2)
+    network = Network(layers, optimizer_p)
+    network.train(train_data, train_class, val_data, val_class, epochs_p, batch_size_p, learning_rate_p, decay_rate_p,
+                  enable_l2_p)
     network.eval_network(test_data, test_class)
 
     # Logging for testing:
-    print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
-          f" decay rate - {decay_rate}, L2 enabling is {enable_l2} for {0.01}")
-    print(f"Log: network was optimized with {optimizer_param} optimizer and layers were {layers}")
+    print(f"Log: finished with params: epochs - {epochs_p}, batch size - {batch_size_p},"
+          f" learning rate - {learning_rate_p}, decay rate - {decay_rate_p}, L2 enabling is {enable_l2_p} for {0.01}")
+    print(f"Log: network was optimized with {optimizer_p} optimizer and layers were {layers}")
