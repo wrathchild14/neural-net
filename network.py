@@ -14,6 +14,7 @@ class Network(object):
                         range(1, len(sizes))]
         self.biases = [np.zeros((x, 1)) for x in sizes[1:]]
         self.optimizer = optimizer
+        self.l2_lambda = 0.01
         if self.optimizer == "adam":
             # Implement the buffers necessary for the Adam optimizer.
             self.beta1 = 0.9
@@ -26,7 +27,7 @@ class Network(object):
         print(f"Log: initialized network with the {self.optimizer} optimizer")
 
     def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, learning_rate,
-              decay_rate, l2_lambda):
+              decay_rate, enable_l2):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -55,7 +56,9 @@ class Network(object):
                 iteration_index += 1
                 loss = cross_entropy(mini_batch[1], output_activation)
                 # L2 regularisation loss
-                loss += (l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
+                if enable_l2:
+                    loss += (self.l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
+
                 loss_avg += loss
 
             print("Epoch {} complete".format(j))
@@ -205,10 +208,10 @@ if __name__ == "__main__":
     # number of input attributes from the data, and the last layer has to match the number of output classes
     # The initial settings are not even close to the optimal network architecture, try increasing the number of layers
     # and neurons and see what happens.
-    net = Network([train_data.shape[0], 100, 100, 10], optimizer="adam")
+    net = Network([train_data.shape[0], 200, 10], optimizer="adam")
     # epoch, batch_size, learning_rate, decay_rate, l2_lambda = 20, 16, 0.01, 0.05, 0.001
-    epochs, batch_size, learning_rate, decay_rate, l2_lambda = 50, 16, 2e-5, 0.001, 0.001
-    net.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate, l2_lambda)
+    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 50, 16, 2e-5, 0.001, True
+    net.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate, enable_l2)
     net.eval_network(test_data, test_class)
     print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
-          f" decay rate - {decay_rate}, lambda for L2 - {l2_lambda}")
+          f" decay rate - {decay_rate}, lambda for L2 - {0.01}")
