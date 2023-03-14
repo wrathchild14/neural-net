@@ -15,7 +15,6 @@ class Network(object):
         self.optimizer = optimizer
         self.l2_lambda = 0.01
         if self.optimizer == "adam":
-            # Implement the buffers necessary for the Adam optimizer.
             self.beta1 = 0.9
             self.beta2 = 0.999
             self.adam_eps = 1e-8
@@ -51,10 +50,13 @@ class Network(object):
 
                 self.update_network(gw, gb, learning_rate_current, iteration_index)
 
-                # Exponential learning rate decay
+                # Learning rate scheduler = Exponential learning rate decay
                 learning_rate_current = learning_rate_param * np.exp(-decay_rate_param * j)
+                # learning_rate_current = learning_rate_param
+
                 iteration_index += 1
                 loss = cross_entropy(mini_batch[1], output_activation)
+
                 # L2 regularisation loss
                 if enable_l2_param:
                     loss += (self.l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
@@ -90,7 +92,6 @@ class Network(object):
         # gw - weight gradients - list with elements of the same shape as elements in self.weights
         # gb - bias gradients - list with elements of the same shape as elements in self.biases
         # eta - learning rate
-        # SGD
         if self.optimizer == "sgd":
             for i in range(len(self.weights)):
                 self.weights[i] -= eta * gw[i]
@@ -211,12 +212,17 @@ if __name__ == "__main__":
     # and neurons and see what happens.
 
     # Params
-    layers, optimizer = [train_data.shape[0], 200, 10], "sgd"
-    # epoch, batch_size, learning_rate, decay_rate, l2_lambda = 20, 16, 0.01, 0.05, 0.001
-    epochs, batch_size, learning_rate, decay_rate, enable_l2 = 30, 16, 2e-5, 0.001, True
+
+    layers = [train_data.shape[0], 200, 100, 10]
+
+    # sgd
+    optimizer_param, epochs, batch_size, learning_rate, decay_rate, enable_l2 = "sgd", 30, 16, 0.001, 0.01, True
+
+    # adam
+    # optimizer, epochs, batch_size, learning_rate, decay_rate, enable_l2 = "adam", 30, 16, 2e-4, 0.01, True
 
     # Core
-    network = Network(layers, optimizer)
+    network = Network(layers, optimizer_param)
     network.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate,
                   enable_l2)
     network.eval_network(test_data, test_class)
@@ -224,4 +230,4 @@ if __name__ == "__main__":
     # Logging for testing:
     print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
           f" decay rate - {decay_rate}, L2 enabling is {enable_l2} for {0.01}")
-    print(f"Log: network was optimized with {optimizer} optimizer and layers were {layers}")
+    print(f"Log: network was optimized with {optimizer_param} optimizer and layers were {layers}")
