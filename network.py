@@ -16,10 +16,17 @@ class Network(object):
         self.optimizer = optimizer
         if self.optimizer == "adam":
             # Implement the buffers necessary for the Adam optimizer.
-            pass
+            self.beta1 = 0.9
+            self.beta2 = 0.999
+            self.adam_eps = 1e-8
+            self.mean_w = [np.zeros_like(w) for w in self.weights]
+            self.variance_w = [np.zeros_like(w) for w in self.weights]
+            self.mean_b = [np.zeros_like(b) for b in self.biases]
+            self.variance_b = [np.zeros_like(b) for b in self.biases]
+        print(f"Log: initialized network with the {self.optimizer} optimizer")
 
-    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, eta, decay_rate,
-              l2_lambda):
+    def train(self, training_data, training_class, eval_data, eval_class, epochs, mini_batch_size, learning_rate,
+              decay_rate, l2_lambda):
         # training data - numpy array of dimensions [n0 x m], where m is the number of examples in the data and
         # n0 is the number of input attributes
         # training_class - numpy array of dimensions [c x m], where c is the number of classes
@@ -27,7 +34,7 @@ class Network(object):
         # mini_batch_size - number of examples the network uses to compute the gradient estimation
 
         iteration_index = 0
-        eta_current = eta
+        learning_rate_current = learning_rate
 
         n = training_data.shape[1]
         for j in range(epochs):
@@ -41,13 +48,11 @@ class Network(object):
                 output_activation, zs, activations = self.forward_pass(mini_batch[0])
                 gw, gb = net.backward_pass(output_activation, mini_batch[1], zs, activations)
 
-                self.update_network(gw, gb, eta_current)
+                self.update_network(gw, gb, learning_rate_current, iteration_index)
 
                 # Exponential learning rate decay
-                eta_current = eta * np.exp(-decay_rate * j)
-
+                learning_rate_current = learning_rate * np.exp(-decay_rate * j)
                 iteration_index += 1
-
                 loss = cross_entropy(mini_batch[1], output_activation)
                 # L2 regularisation loss
                 loss += (l2_lambda / (2 * mini_batch_size)) * sum([np.sum(np.square(w)) for w in self.weights])
@@ -78,7 +83,7 @@ class Network(object):
         print("Validation Loss:" + str(loss_avg / n))
         print("Classification accuracy: " + str(tp / n))
 
-    def update_network(self, gw, gb, eta):
+    def update_network(self, gw, gb, eta, iteration_index):
         # gw - weight gradients - list with elements of the same shape as elements in self.weights
         # gb - bias gradients - list with elements of the same shape as elements in self.biases
         # eta - learning rate
@@ -88,8 +93,18 @@ class Network(object):
                 self.weights[i] -= eta * gw[i]
                 self.biases[i] -= eta * gb[i]
         elif self.optimizer == "adam":
-            ########### Implement the update function for Adam:
-            pass
+            for i in range(len(self.weights)):
+                self.mean_w[i] = self.beta1 * self.mean_w[i] + (1 - self.beta1) * gw[i]
+                self.variance_w[i] = self.beta2 * self.variance_w[i] + (1 - self.beta2) * gw[i] * gw[i]
+                mean_w_hat = self.mean_w[i] / (1 - self.beta1 ** (iteration_index + 1))
+                variance_w_hat = self.variance_w[i] / (1 - self.beta2 ** (iteration_index + 1))
+                self.weights[i] -= eta * mean_w_hat / (np.sqrt(variance_w_hat) + self.adam_eps)
+
+                self.mean_b[i] = self.beta1 * self.mean_b[i] + (1 - self.beta1) * gb[i]
+                self.variance_b[i] = self.beta2 * self.variance_b[i] + (1 - self.beta2) * gb[i] * gb[i]
+                mean_b_hat = self.mean_b[i] / (1 - self.beta1 ** (iteration_index + 1))
+                variance_b_hat = self.variance_b[i] / (1 - self.beta2 ** (iteration_index + 1))
+                self.biases[i] -= eta * mean_b_hat / (np.sqrt(variance_b_hat) + self.adam_eps)
         else:
             raise ValueError('Unknown optimizer:' + self.optimizer)
 
@@ -144,8 +159,8 @@ def cross_entropy(y_true, y_predicted, epsilon=1e-12):
     targets = y_true.transpose()
     predictions = y_predicted.transpose()
     predictions = np.clip(predictions, epsilon, 1. - epsilon)
-    N = predictions.shape[0]
-    ce = -np.sum(targets * np.log(predictions + 1e-9)) / N
+    n = predictions.shape[0]
+    ce = -np.sum(targets * np.log(predictions + 1e-9)) / n
     return ce
 
 
@@ -190,6 +205,10 @@ if __name__ == "__main__":
     # number of input attributes from the data, and the last layer has to match the number of output classes
     # The initial settings are not even close to the optimal network architecture, try increasing the number of layers
     # and neurons and see what happens.
-    net = Network([train_data.shape[0], 100, 100, 10], optimizer="sgd")
-    net.train(train_data, train_class, val_data, val_class, 50, 64, 0.01, 0.05, 0.01)
+    net = Network([train_data.shape[0], 100, 100, 10], optimizer="adam")
+    # epoch, batch_size, learning_rate, decay_rate, l2_lambda = 20, 16, 0.01, 0.05, 0.001
+    epochs, batch_size, learning_rate, decay_rate, l2_lambda = 50, 16, 2e-5, 0.001, 0.001
+    net.train(train_data, train_class, val_data, val_class, epochs, batch_size, learning_rate, decay_rate, l2_lambda)
     net.eval_network(test_data, test_class)
+    print(f"Log: finished with params: epochs - {epochs}, batch size - {batch_size}, learning rate - {learning_rate},"
+          f" decay rate - {decay_rate}, lambda for L2 - {l2_lambda}")
