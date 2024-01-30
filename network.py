@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import idx2numpy
 
 
 class Network(object):
@@ -14,6 +15,7 @@ class Network(object):
         self.biases = [np.zeros((x, 1)) for x in sizes[1:]]
         self.optimizer = optimizer
         self.l2_lambda = 0.01
+        self.train_losses = []
         if self.optimizer == "adam":
             self.beta1 = 0.9
             self.beta2 = 0.999
@@ -46,7 +48,7 @@ class Network(object):
 
             for mini_batch in mini_batches:
                 output_activation, zs, activations = self.forward_pass(mini_batch[0])
-                gw, gb = network.backward_pass(output_activation, mini_batch[1], zs, activations)
+                gw, gb = self.backward_pass(output_activation, mini_batch[1], zs, activations)
 
                 self.update_network(gw, gb, learning_rate_current, iteration_index)
 
@@ -64,7 +66,9 @@ class Network(object):
                 loss_avg += loss
 
             print("Epoch {} complete".format(j))
-            print("Loss:" + str(loss_avg / len(mini_batches)))
+            loss = loss_avg / len(mini_batches)
+            print("Loss:" + str(loss))
+            self.train_losses.append(loss)
             if j % 10 == 0:
                 self.eval_network(eval_data, eval_class)
 
@@ -180,6 +184,27 @@ def unpickle(file):
     with open(file, 'rb') as fo:
         return pickle.load(fo, encoding='bytes')
 
+# installing data is in the script install_data.py
+def load_data_mnist():
+    train_images_path = './data/train-images-idx3-ubyte'
+    train_labels_path = './data/train-labels-idx1-ubyte'
+    test_images_path = './data/t10k-images-idx3-ubyte'
+    test_labels_path = './data/t10k-labels-idx1-ubyte'
+
+    train_data = idx2numpy.convert_from_file(train_images_path)
+    train_class = idx2numpy.convert_from_file(train_labels_path)
+    test_data = idx2numpy.convert_from_file(test_images_path)
+    test_class = idx2numpy.convert_from_file(test_labels_path)
+
+    train_data = train_data.reshape(train_data.shape[0], -1) / 255.0
+    test_data = test_data.reshape(test_data.shape[0], -1) / 255.0
+
+    train_class_one_hot = np.zeros((train_class.shape[0], 10))
+    train_class_one_hot[np.arange(train_class.shape[0]), train_class] = 1.0
+    test_class_one_hot = np.zeros((test_class.shape[0], 10))
+    test_class_one_hot[np.arange(test_class.shape[0]), test_class] = 1.0
+
+    return train_data.T, train_class_one_hot.T, test_data.T, test_class_one_hot.T
 
 def load_data_cifar(train_file_param, test_file_param):
     train_dict = unpickle(train_file_param)
@@ -197,9 +222,10 @@ def load_data_cifar(train_file_param, test_file_param):
 
 
 if __name__ == "__main__":
-    train_file = "./data/train_data.pckl"
-    test_file = "./data/test_data.pckl"
-    train_data, train_class, test_data, test_class = load_data_cifar(train_file, test_file)
+    # train_file = "./data/train_data.pckl"
+    # test_file = "./data/test_data.pckl"
+    # train_data, train_class, test_data, test_class = load_data_cifar(train_file, test_file)
+    train_data, train_class, test_data, test_class = load_data_mnist()
     val_pct = 0.1
     val_size = int(len(train_data) * val_pct)
     val_data = train_data[..., :val_size]
