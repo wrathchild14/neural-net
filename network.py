@@ -186,10 +186,10 @@ def unpickle(file):
 
 # installing data is in the script install_data.py
 def load_data_mnist():
-    train_images_path = './data/train-images-idx3-ubyte'
-    train_labels_path = './data/train-labels-idx1-ubyte'
-    test_images_path = './data/t10k-images-idx3-ubyte'
-    test_labels_path = './data/t10k-labels-idx1-ubyte'
+    train_images_path = './data/mnist/train-images-idx3-ubyte'
+    train_labels_path = './data/mnist/train-labels-idx1-ubyte'
+    test_images_path = './data/mnist/t10k-images-idx3-ubyte'
+    test_labels_path = './data/mnist/t10k-labels-idx1-ubyte'
 
     train_data = idx2numpy.convert_from_file(train_images_path)
     train_class = idx2numpy.convert_from_file(train_labels_path)
@@ -205,6 +205,32 @@ def load_data_mnist():
     test_class_one_hot[np.arange(test_class.shape[0]), test_class] = 1.0
 
     return train_data.T, train_class_one_hot.T, test_data.T, test_class_one_hot.T
+
+def load_data_cifar10():
+    train_data = []
+    train_class = []
+    for i in range(1, 6):
+        with open(f'./data/cifar-10-batches-py/data_batch_{i}', 'rb') as f:
+            batch = pickle.load(f, encoding='bytes')
+            train_data.append(batch[b'data'])
+            train_class.append(batch[b'labels'])
+    train_data = np.concatenate(train_data)
+    train_class = np.concatenate(train_class)
+
+    with open('./data/cifar-10-batches-py/test_batch', 'rb') as f:
+        batch = pickle.load(f, encoding='bytes')
+        test_data = batch[b'data']
+        test_class = np.array(batch[b'labels'])
+
+    train_data = train_data.reshape(train_data.shape[0], 3, 32, 32).transpose(0,2,3,1) / 255.0
+    test_data = test_data.reshape(test_data.shape[0], 3, 32, 32).transpose(0,2,3,1) / 255.0
+
+    train_class_one_hot = np.zeros((train_class.shape[0], 10))
+    train_class_one_hot[np.arange(train_class.shape[0]), train_class] = 1.0
+    test_class_one_hot = np.zeros((test_class.shape[0], 10))
+    test_class_one_hot[np.arange(test_class.shape[0]), test_class] = 1.0
+
+    return train_data, train_class_one_hot, test_data, test_class_one_hot
 
 def load_data_cifar(train_file_param, test_file_param):
     train_dict = unpickle(train_file_param)
@@ -226,6 +252,7 @@ if __name__ == "__main__":
     # test_file = "./data/test_data.pckl"
     # train_data, train_class, test_data, test_class = load_data_cifar(train_file, test_file)
     train_data, train_class, test_data, test_class = load_data_mnist()
+    # train_data, train_class, test_data, test_class = load_data_cifar10()
     val_pct = 0.1
     val_size = int(len(train_data) * val_pct)
     val_data = train_data[..., :val_size]
