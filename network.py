@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import idx2numpy
+import argparse
 
 
 class Network(object):
@@ -265,22 +266,32 @@ if __name__ == "__main__":
     # and neurons and see what happens.
 
     # Params
+    layers = [train_data.shape[0], train_class.shape[0]]
+    parser = argparse.ArgumentParser(description='Neural Network Training')
+    parser.add_argument('--layers', nargs='+', type=int, default=[200, 100], help='Hidden layers neurons count')
+    parser.add_argument('--optimizer', type=str, default='adam', help='Optimizer type')
+    parser.add_argument('--epochs', type=int, default=30, help='Number of training epochs')
+    parser.add_argument('--batch_size', type=int, default=16, help='Mini-batch size')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--decay_rate', type=float, default=0.01, help='Decay rate')
+    parser.add_argument('--enable_l2', type=bool, default=True, help='Enable L2 regularization')
 
-    layers = [train_data.shape[0], 200, 100, 10]
+    args = parser.parse_args()
 
-    # sgd
-    optimizer_p, epochs_p, batch_size_p, learning_rate_p, decay_rate_p, enable_l2_p = "sgd", 30, 16, 0.001, 0.01, True
-
-    # adam
-    # optimizer_p, epochs_p, batch_size_p, learning_rate_p, decay_rate_p, enable_l2_p = "adam", 30, 16, 2e-4, 0.01, True
+    layers = [layers[0]] + args.layers + [layers[-1]]
+    optimizer = args.optimizer
+    epochs = args.epochs
+    bs = args.batch_size
+    lr = args.learning_rate
+    decay_rate = args.decay_rate
+    enable_l2 = args.enable_l2
 
     # Core
-    network = Network(layers, optimizer_p)
-    network.train(train_data, train_class, val_data, val_class, epochs_p, batch_size_p, learning_rate_p, decay_rate_p,
-                  enable_l2_p)
+    network = Network(layers, optimizer)
+    network.train(train_data, train_class, val_data, val_class, epochs, bs, lr, decay_rate, enable_l2)
     network.eval_network(test_data, test_class)
 
     # Logging for testing:
-    print(f"Log: finished with params: epochs - {epochs_p}, batch size - {batch_size_p},"
-          f" learning rate - {learning_rate_p}, decay rate - {decay_rate_p}, L2 enabling is {enable_l2_p} for {0.01}")
-    print(f"Log: network was optimized with {optimizer_p} optimizer and layers were {layers}")
+    print(f"Log: finished with params: epochs - {epochs}, batch size - {bs},"
+          f" learning rate - {lr}, decay rate - {decay_rate}, L2 enabling is {enable_l2} for {0.01}")
+    print(f"Log: network was optimized with {optimizer} optimizer and layers were {layers}")
